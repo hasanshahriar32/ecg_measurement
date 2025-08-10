@@ -1,7 +1,7 @@
 #ifndef MQTT_PUBLISH_H
 #define MQTT_PUBLISH_H
-
 #include <PubSubClient.h>
+// ...existing code...
 
 #ifdef ARDUINO_ARCH_ESP32
   #include <WiFi.h>
@@ -58,31 +58,38 @@ void mqttSetup() {
 }
 
 void mqttLoopAndPublish() {
+  // Only attempt MQTT if WiFi is connected
+  if (WiFi.status() != WL_CONNECTED) {
+    return;
+  }
+  
   if (!mqttClient.connected()) {
     mqttReconnect();
   }
-  mqttClient.loop();
-  static unsigned long lastMqtt = 0;
-  if (millis() - lastMqtt > 1000) {
-    lastMqtt = millis();
+  
+  if (mqttClient.connected()) {
+    mqttClient.loop();
+    static unsigned long lastMqtt = 0;
+    if (millis() - lastMqtt > 1000) {
+      lastMqtt = millis();
 
-    // Prepare JSON payload containing hp and threshold (no BPM)
-    char payload[256];
-    char deviceId[20];
-    snprintf(deviceId, sizeof(deviceId), "ESP32_%04X", (uint16_t)(ESP.getEfuseMac() & 0xFFFF));
+      // Prepare JSON payload containing comprehensive ECG analysis
+      char payload[256];
+      char deviceId[20];
+      snprintf(deviceId, sizeof(deviceId), "ESP32_%04X", (uint16_t)(ESP.getEfuseMac() & 0xFFFF));
 
-    // Simple timestamp placeholder; replace with RTC/NTP if available
-    char timestamp[32];
-    snprintf(timestamp, sizeof(timestamp), "%lu", (unsigned long)millis());
+      // Simple timestamp placeholder; replace with RTC/NTP if available
+      char timestamp[32];
+      snprintf(timestamp, sizeof(timestamp), "%lu", (unsigned long)millis());
 
-    snprintf(payload, sizeof(payload),
-             "{\"userId\":\"BW8NUP21AWMkI0xrrI2nxBP6Xd92\",\"dataType\":\"ecg_analysis\",\"hp\":%d,\"threshold\":%d,\"bpm\":%d,\"baselineHR\":%d,\"rmssd\":%.1f,\"hrTrend\":%d,\"timestamp\":\"%s\",\"deviceId\":\"%s\"}",
-             signalValue, thresholdValue, heartRate, baselineHR, rmssd, hrTrend, timestamp, deviceId);
+      snprintf(payload, sizeof(payload),
+               "{\"userId\":\"BW8NUP21AWMkI0xrrI2nxBP6Xd92\",\"dataType\":\"ecg_analysis\",\"hp\":%d,\"threshold\":%d,\"bpm\":%d,\"baselineHR\":%d,\"rmssd\":%.1f,\"hrTrend\":%d,\"timestamp\":\"%s\",\"deviceId\":\"%s\"}",
+               signalValue, thresholdValue, heartRate, baselineHR, rmssd, hrTrend, timestamp, deviceId);
 
-    mqttClient.publish(mqtt_topic, payload);
-    Serial.print("[MQTT] Published: ");
-    Serial.println(payload);
+      mqttClient.publish(mqtt_topic, payload);
+      Serial.print("[MQTT] Published: ");
+      Serial.println(payload);
+    }
   }
 }
-
 #endif // MQTT_PUBLISH_H

@@ -20,8 +20,8 @@ const float MIN_THRESHOLD = 8.0f;              // Minimum threshold in ADC count
 const uint32_t REFRACTORY_MS = 250;            // Min time between beats (ms) ~240 BPM max
 
 // ====== Networking (fill these) ======
-const char* WIFI_SSID = "One Sky";
-const char* WIFI_PASS = "1234567890";
+const char* WIFI_SSID = "realme 9i";
+const char* WIFI_PASS = "gragra12345";
 
 // ====== State ======
 volatile uint32_t lastSampleMicros = 0;
