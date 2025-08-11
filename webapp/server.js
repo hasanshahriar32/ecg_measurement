@@ -58,11 +58,16 @@ mqttClient.on('message', (topic, message) => {
         
         // Validate data structure
         if (data.userId && data.dataType === 'ecg_analysis') {
-            // Emit to all connected clients
-            io.emit('ecg_data', {
+            // Add some processing for better ECG visualization
+            const processedData = {
                 ...data,
-                receivedAt: new Date().toISOString()
-            });
+                receivedAt: new Date().toISOString(),
+                // Normalize HP signal for better visualization (scale to typical ECG range)
+                normalizedHP: data.hp ? (data.hp / 10) : 0
+            };
+            
+            // Emit to all connected clients
+            io.emit('ecg_data', processedData);
         }
     } catch (error) {
         console.error('Error parsing MQTT message:', error);

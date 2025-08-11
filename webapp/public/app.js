@@ -2,12 +2,14 @@
 const socket = io();
 
 // Chart instances
-let hrChart, hrvChart;
+let hrChart, hrvChart, ecgChart;
 
 // Data storage
 const hrData = [];
 const hrvData = [];
+const ecgData = [];
 const maxDataPoints = 50;
+const maxECGPoints = 200; // More points for smoother ECG waveform
 
 // DOM elements
 const elements = {
@@ -53,6 +55,80 @@ function initCharts() {
             }
         }
     };
+
+    // ECG Waveform Chart
+    const ecgCtx = document.getElementById('ecgChart').getContext('2d');
+    ecgChart = new Chart(ecgCtx, {
+        type: 'line',
+        data: {
+            labels: Array.from({length: maxECGPoints}, (_, i) => i),
+            datasets: [{
+                label: 'ECG Signal',
+                data: new Array(maxECGPoints).fill(0),
+                borderColor: '#00ff41', // Classic ECG green
+                backgroundColor: 'transparent',
+                tension: 0.1,
+                fill: false,
+                pointRadius: 0,
+                pointHoverRadius: 0,
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    display: false,
+                    grid: {
+                        display: false
+                    }
+                },
+                y: {
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'mV',
+                        color: '#00ff41',
+                        font: {
+                            size: 12,
+                            weight: 'bold'
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(0, 255, 65, 0.2)',
+                        lineWidth: 1
+                    },
+                    ticks: {
+                        color: '#00ff41',
+                        font: {
+                            size: 10
+                        },
+                        maxTicksLimit: 8
+                    },
+                    min: -200,
+                    max: 200
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            animation: {
+                duration: 0
+            },
+            elements: {
+                point: {
+                    radius: 0
+                }
+            },
+            interaction: {
+                intersect: false
+            }
+        }
+    });
 
     // Heart Rate Chart
     const hrCtx = document.getElementById('hrChart').getContext('2d');
@@ -155,6 +231,24 @@ function updateVitalSigns(data) {
 // Update charts
 function updateCharts(data) {
     const currentTime = new Date().toLocaleTimeString();
+    
+    // Update ECG waveform with normalized HP signal for better visualization
+    const ecgValue = data.normalizedHP !== undefined ? data.normalizedHP : (data.hp || 0) / 10;
+    ecgData.push(ecgValue);
+    
+    // Keep only recent ECG data points for smooth scrolling waveform
+    if (ecgData.length > maxECGPoints) {
+        ecgData.shift();
+    }
+    
+    // Update ECG chart with scrolling effect
+    const paddedData = [...ecgData];
+    while (paddedData.length < maxECGPoints) {
+        paddedData.unshift(0);
+    }
+    
+    ecgChart.data.datasets[0].data = paddedData;
+    ecgChart.update('none');
     
     // Update HR chart
     hrData.push({
@@ -279,8 +373,9 @@ document.addEventListener('visibilitychange', () => {
 
 // Handle window resize for charts
 window.addEventListener('resize', () => {
-    if (hrChart && hrvChart) {
+    if (hrChart && hrvChart && ecgChart) {
         hrChart.resize();
         hrvChart.resize();
+        ecgChart.resize();
     }
 });
