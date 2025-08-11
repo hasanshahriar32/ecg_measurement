@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECG Monitor Dashboard</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1><i class="fas fa-heartbeat"></i> ECG Monitor Dashboard</h1>
+            <div class="connection-status" id="connectionStatus">
+                <i class="fas fa-circle"></i>
+                <span>Connecting...</span>
+            </div>
+        </header>
+
+        <div class="dashboard">
+            <!-- Device Info Card -->
+            <div class="card device-info">
+                <h2><i class="fas fa-microchip"></i> Device Information</h2>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Device ID:</label>
+                        <span id="deviceId">-</span>
+                    </div>
+                    <div class="info-item">
+                        <label>User ID:</label>
+                        <span id="userId">-</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Last Update:</label>
+                        <span id="lastUpdate">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vital Signs Cards -->
+            <div class="vital-signs">
+                <div class="card vital-card">
+                    <div class="vital-header">
+                        <i class="fas fa-heartbeat"></i>
+                        <h3>Heart Rate</h3>
+                    </div>
+                    <div class="vital-value">
+                        <span id="bpm">--</span>
+                        <small>BPM</small>
+                    </div>
+                    <div class="vital-trend" id="hrTrend">--</div>
+                </div>
+
+                <div class="card vital-card">
+                    <div class="vital-header">
+                        <i class="fas fa-chart-line"></i>
+                        <h3>Heart Points</h3>
+                    </div>
+                    <div class="vital-value">
+                        <span id="hp">--</span>
+                        <small>HP</small>
+                    </div>
+                </div>
+
+                <div class="card vital-card">
+                    <div class="vital-header">
+                        <i class="fas fa-wave-square"></i>
+                        <h3>RMSSD</h3>
+                    </div>
+                    <div class="vital-value">
+                        <span id="rmssd">--</span>
+                        <small>ms</small>
+                    </div>
+                </div>
+
+                <div class="card vital-card">
+                    <div class="vital-header">
+                        <i class="fas fa-adjust"></i>
+                        <h3>Threshold</h3>
+                    </div>
+                    <div class="vital-value">
+                        <span id="threshold">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="charts-section">
+                <div class="card chart-card">
+                    <h2><i class="fas fa-chart-line"></i> Heart Rate Trend</h2>
+                    <canvas id="hrChart"></canvas>
+                </div>
+
+                <div class="card chart-card">
+                    <h2><i class="fas fa-activity"></i> Heart Rate Variability</h2>
+                    <canvas id="hrvChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Raw Data Log -->
+            <div class="card data-log">
+                <h2><i class="fas fa-list"></i> Data Log</h2>
+                <div class="log-container" id="dataLog">
+                    <p class="log-item">Waiting for ECG data...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
