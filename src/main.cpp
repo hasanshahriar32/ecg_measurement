@@ -13,6 +13,7 @@ const int PIN_LO_MINUS = 33;   // GPIO33
 // ====== Sampling and detection parameters ======
 const int SAMPLE_HZ = 250;                     // ECG sample rate (Hz)
 const uint32_t SAMPLE_US = 1000000UL / SAMPLE_HZ;
+const uint32_t CONSOLE_INTERVAL_MS = 100;      // Console output every 100ms (10Hz) - adjust this to make faster/slower
 const int BASELINE_WINDOW = 64;                // Moving-average window for baseline removal
 const float ENVELOPE_ALPHA = 0.05f;            // Smoothing for rectified envelope (0..1)
 const float THRESH_SCALE = 0.6f;               // Threshold as a fraction of envelope
@@ -25,6 +26,7 @@ const char* WIFI_PASS = "gragra12345";
 
 // ====== State ======
 volatile uint32_t lastSampleMicros = 0;
+volatile uint32_t lastConsoleMs = 0;  // For timing console output
 
 int rawBuf[BASELINE_WINDOW];
 long rawSum = 0;
@@ -119,7 +121,9 @@ static void detectPanicSignatures(uint32_t nowMs) {
   if (panicDetected && !panicAlertSent) {
     Serial.println("PANIC_ALERT: " + alertMsg);
     if (WiFi.status() == WL_CONNECTED) {
-      sendTelegramNotification("🚨 PANIC ALERT: " + alertMsg + "Time: " + String(millis()/1000) + "s");
+      String telegramMsg = "🚨 PANIC ALERT: " + alertMsg + "Time: " + String(millis()/1000) + "s\n\n";
+      telegramMsg += "📊 View live ECG data: https://ecg-measurement.onrender.com/";
+      sendTelegramNotification(telegramMsg);
     }
     panicAlertSent = true;
   }
@@ -224,12 +228,15 @@ static void sampleAndProcess() {
   // Update values for MQTT/serial
   signalValue = hp;
 
-  // Serial Plotter friendly output: hp,threshold,bpm
-  Serial.print(hp);
-  Serial.print(',');
-  Serial.print((int)thr);
-  Serial.print(',');
-  Serial.println(bpm);
+  // Print hp and threshold for plotting (slowed down)
+  static int printCounter = 0;
+  printCounter++;
+  if (printCounter >= 5) { // Print every 5th sample (50 Hz)
+    Serial.print(hp);
+    Serial.print(",");
+    Serial.println((int)thr);
+    printCounter = 0;
+  }
 }
 
 static void connectWiFi() {
@@ -262,7 +269,11 @@ static void connectWiFi() {
     Serial.print("Signal strength: ");
     Serial.print(WiFi.RSSI());
     Serial.println(" dBm");
-    sendTelegramNotification(String("ESP32 ECG Monitor connected: ") + WiFi.localIP().toString());
+    String connectionMsg = String("✅ ESP32 ECG Monitor connected successfully!\n");
+    connectionMsg += "📍 Device IP: " + WiFi.localIP().toString() + "\n";
+    connectionMsg += "📶 Signal: " + String(WiFi.RSSI()) + " dBm\n\n";
+    connectionMsg += "📊 View live ECG dashboard: https://ecg-measurement.onrender.com/";
+    sendTelegramNotification(connectionMsg);
   } else {
     Serial.println("WiFi connection FAILED!");
     Serial.print("WiFi status: ");

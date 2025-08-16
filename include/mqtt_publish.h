@@ -87,8 +87,8 @@ void mqttLoopAndPublish() {
                signalValue, thresholdValue, heartRate, baselineHR, rmssd, hrTrend, timestamp, deviceId);
 
       mqttClient.publish(mqtt_topic, payload);
-      Serial.print("[MQTT] Published: ");
-      Serial.println(payload);
+      // Serial.print("[MQTT] Published: ");
+      // Serial.println(payload);
     }
   }
 }
