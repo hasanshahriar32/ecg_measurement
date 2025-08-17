@@ -2,6 +2,7 @@
 #include <WiFi.h>
 #include "telegram_notify.h"
 #include "mqtt_publish.h"
+#include "pulse_sensor.h"
 
 // ====== Pin configuration (adjust to your wiring) ======
 // ECG analog output from AD8232 -> an ADC-capable pin on ESP32 (GPIO34..39 are input-only ADC1 pins)
@@ -50,6 +51,9 @@ bool panicAlertSent = false;
 int heartRate = 0;
 int signalValue = 0;
 int thresholdValue = 0; // dynamic threshold for publishing
+
+// Pulse sensor instance
+PulseSensor pulseSensor;
 
 static void initBaseline(int seed) {
   rawSum = 0;
@@ -228,13 +232,11 @@ static void sampleAndProcess() {
   // Update values for MQTT/serial
   signalValue = hp;
 
-  // Print hp and threshold for plotting (slowed down)
+  // Print hp value only (slowed down)
   static int printCounter = 0;
   printCounter++;
   if (printCounter >= 5) { // Print every 5th sample (50 Hz)
-    Serial.print(hp);
-    Serial.print(",");
-    Serial.println((int)thr);
+    Serial.println(hp);
     printCounter = 0;
   }
 }
@@ -303,9 +305,13 @@ void setup() {
   int r = analogRead(PIN_ECG);
   initBaseline(r);
 
+  // Initialize pulse sensor
+  pulseSensor.begin();
+
   lastSampleMicros = micros();
   Serial.println("AD8232 ECG ready");
-  Serial.println("hp,threshold,bpm");
+  Serial.println("Pulse sensor ready");
+  Serial.println("ECG HP values:");
 
   // Network services
   connectWiFi();
@@ -318,6 +324,15 @@ void loop() {
     lastSampleMicros += SAMPLE_US;
     sampleAndProcess();
   }
+  
+  // Read pulse sensor (call regularly for accurate detection)
+  int pulseBPM = pulseSensor.readHeartRate();
+  
+  // Update heartRate with pulse sensor data if available
+  if (pulseBPM > 0) {
+    heartRate = pulseBPM;
+  }
+  
   // Publish over MQTT once a second in mqttLoopAndPublish
   mqttLoopAndPublish();
 }
